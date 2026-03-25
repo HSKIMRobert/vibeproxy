@@ -143,7 +143,7 @@ class ServerManager: ObservableObject {
         guard ConfigComposer.isOAuthProviderWildcardExcluded(oauthProviderKey, in: baseConfig.root) else {
             return nil
         }
-        return "Disabled by ~/.cli-proxy-api/config.yaml oauth-excluded-models. Remove the '*' exclusion for \(oauthProviderKey) to enable it here."
+        return "Disabled in config via oauth-excluded-models. Remove the '*' exclusion for \(oauthProviderKey) to enable it here."
     }
 
     func isProviderToggleLocked(_ providerKey: String) -> Bool {
