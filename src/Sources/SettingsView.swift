@@ -113,6 +113,7 @@ struct VercelGatewayControls: View {
 struct ServiceRow<ExtraContent: View>: View {
     let serviceType: ServiceType
     let iconName: String
+    let iconSystemName: String?
     let accounts: [AuthAccount]
     let isAuthenticating: Bool
     let helpText: String?
@@ -159,6 +160,10 @@ struct ServiceRow<ExtraContent: View>: View {
                     Image(nsImage: nsImage)
                         .resizable()
                         .renderingMode(.template)
+                        .frame(width: 20, height: 20)
+                        .opacity(isEnabled ? 1.0 : 0.4)
+                } else if let iconSystemName {
+                    Image(systemName: iconSystemName)
                         .frame(width: 20, height: 20)
                         .opacity(isEnabled ? 1.0 : 0.4)
                 }
@@ -580,6 +585,7 @@ struct SettingsView: View {
                     ServiceRow(
                         serviceType: .antigravity,
                         iconName: "icon-antigravity.png",
+                        iconSystemName: nil,
                         accounts: authManager.accounts(for: .antigravity),
                         isAuthenticating: authenticatingService == .antigravity,
                         helpText: "Antigravity provides OAuth-based access to various AI models including Gemini and Claude. One login gives you access to multiple AI services.",
@@ -598,6 +604,7 @@ struct SettingsView: View {
                     ServiceRow(
                         serviceType: .claude,
                         iconName: "icon-claude.png",
+                        iconSystemName: nil,
                         accounts: authManager.accounts(for: .claude),
                         isAuthenticating: authenticatingService == .claude,
                         helpText: nil,
@@ -618,6 +625,7 @@ struct SettingsView: View {
                     ServiceRow(
                         serviceType: .codex,
                         iconName: "icon-codex.png",
+                        iconSystemName: nil,
                         accounts: authManager.accounts(for: .codex),
                         isAuthenticating: authenticatingService == .codex,
                         helpText: nil,
@@ -636,6 +644,7 @@ struct SettingsView: View {
                     ServiceRow(
                         serviceType: .gemini,
                         iconName: "icon-gemini.png",
+                        iconSystemName: nil,
                         accounts: authManager.accounts(for: .gemini),
                         isAuthenticating: authenticatingService == .gemini,
                         helpText: "⚠️ Note: If you're an existing Gemini user with multiple projects, authentication will use your default project. Set your desired project as default in Google AI Studio before connecting.",
@@ -652,8 +661,28 @@ struct SettingsView: View {
                     ) { EmptyView() }
 
                     ServiceRow(
+                        serviceType: .kimi,
+                        iconName: "icon-kimi.png",
+                        iconSystemName: "moon.stars.fill",
+                        accounts: authManager.accounts(for: .kimi),
+                        isAuthenticating: authenticatingService == .kimi,
+                        helpText: "Kimi uses browser-based account authentication so you can route requests through your Kimi subscription instead of an API key.",
+                        isEnabled: serverManager.isProviderEnabled("kimi"),
+                        isToggleLocked: serverManager.isProviderToggleLocked("kimi"),
+                        toggleHelpText: serverManager.providerConfigLockReason("kimi"),
+                        disabledReasonText: serverManager.providerConfigLockReason("kimi"),
+                        customTitle: nil,
+                        onConnect: { connectService(.kimi) },
+                        onDisconnect: { account in disconnectAccount(account) },
+                        onToggleDisabled: { account in toggleAccountDisabled(account) },
+                        onToggleEnabled: { enabled in serverManager.setProviderEnabled("kimi", enabled: enabled) },
+                        onExpandChange: { expanded in expandedRowCount += expanded ? 1 : -1 }
+                    ) { EmptyView() }
+
+                    ServiceRow(
                         serviceType: .copilot,
                         iconName: "icon-copilot.png",
+                        iconSystemName: nil,
                         accounts: authManager.accounts(for: .copilot),
                         isAuthenticating: authenticatingService == .copilot,
                         helpText: "GitHub Copilot provides access to Claude, GPT, Gemini and other models via your Copilot subscription.",
@@ -672,6 +701,7 @@ struct SettingsView: View {
                     ServiceRow(
                         serviceType: .qwen,
                         iconName: "icon-qwen.png",
+                        iconSystemName: nil,
                         accounts: authManager.accounts(for: .qwen),
                         isAuthenticating: authenticatingService == .qwen,
                         helpText: nil,
@@ -690,6 +720,7 @@ struct SettingsView: View {
                     ServiceRow(
                         serviceType: .zai,
                         iconName: "icon-zai.png",
+                        iconSystemName: nil,
                         accounts: authManager.accounts(for: .zai),
                         isAuthenticating: authenticatingService == .zai,
                         helpText: "Z.AI GLM provides access to GLM-4.7 and other models via API key. Get your key at https://z.ai/manage-apikey/apikey-list",
@@ -931,16 +962,13 @@ struct SettingsView: View {
         NSLog("[SettingsView] Starting %@ authentication", serviceType.displayName)
         
         let command: AuthCommand
-        switch serviceType {
-        case .claude: command = .claudeLogin
-        case .codex: command = .codexLogin
-        case .copilot: command = .copilotLogin
-        case .gemini: command = .geminiLogin
-        case .qwen:
+        switch serviceType.connectionAction {
+        case .authCommand(let authCommand):
+            command = authCommand
+        case .promptForQwenEmail:
             authenticatingService = nil
             return // handled separately with email prompt
-        case .antigravity: command = .antigravityLogin
-        case .zai:
+        case .promptForZAIAPIKey:
             authenticatingService = nil
             return // handled separately with API key prompt
         }
@@ -978,6 +1006,8 @@ struct SettingsView: View {
             return "🌐 GitHub Copilot authentication started!\n\nPlease visit github.com/login/device and enter the code shown.\n\nThe app will automatically detect your credentials."
         case .gemini:
             return "🌐 Browser opened for Gemini authentication.\n\nPlease complete the login in your browser.\n\n⚠️ Note: If you have multiple projects, the default project will be used."
+        case .kimi:
+            return "🌐 Browser opened for Kimi authentication.\n\nPlease complete the login in your browser.\n\nThe app will automatically detect your Kimi account."
         case .qwen:
             return "🌐 Browser opened for Qwen authentication.\n\nPlease complete the login in your browser."
         case .antigravity:
