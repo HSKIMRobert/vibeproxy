@@ -8,6 +8,7 @@ enum ProviderCatalog {
         "claude": "claude",
         "codex": "codex",
         "gemini": "gemini-cli",
+        "kimi": "kimi",
         "github-copilot": "github-copilot",
         "antigravity": "antigravity",
         "qwen": "qwen"
